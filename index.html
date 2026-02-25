@@ -1,0 +1,2084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FORGE BUILD — Intelligent Construction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --steel: #1a1a1a;
+    --iron: #2d2d2d;
+    --concrete: #3d3d3d;
+    --rust: #c8440c;
+    --amber: #e8a020;
+    --cream: #f5f0e8;
+    --white: #fafaf8;
+    --muted: #7a7570;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--steel);
+    color: var(--cream);
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  .cursor {
+    width: 12px; height: 12px;
+    background: var(--rust);
+    border-radius: 50%;
+    position: fixed;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 0.1s ease;
+    mix-blend-mode: normal;
+  }
+
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1.5px solid var(--rust);
+    border-radius: 50%;
+    position: fixed;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 9998;
+    transition: all 0.25s ease;
+    opacity: 0.6;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 48px;
+    background: linear-gradient(to bottom, rgba(26,26,26,0.98), transparent);
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.15em;
+    color: var(--white);
+  }
+
+  .logo span { color: var(--rust); }
+
+  nav ul {
+    list-style: none;
+    display: flex;
+    gap: 36px;
+  }
+
+  nav a {
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  nav a:hover { color: var(--cream); }
+
+  .nav-cta {
+    background: var(--rust);
+    color: var(--white) !important;
+    padding: 10px 24px;
+    font-weight: 500;
+  }
+
+  .nav-cta:hover { background: #a8360a; color: var(--white) !important; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 120px 64px 80px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--rust);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(72px, 8vw, 130px);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.4s forwards;
+  }
+
+  .hero h1 em {
+    font-style: normal;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--cream);
+  }
+
+  .hero-sub {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--muted);
+    max-width: 420px;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.6s forwards;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.8s forwards;
+  }
+
+  .btn-primary {
+    background: var(--rust);
+    color: var(--white);
+    padding: 16px 36px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: none;
+    cursor: none;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-primary:hover { background: #a8360a; transform: translateY(-2px); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--cream);
+    padding: 16px 36px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid rgba(245,240,232,0.2);
+    cursor: none;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-ghost:hover { border-color: var(--cream); }
+
+  .hero-right {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-right::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--steel) 0%, transparent 40%);
+    z-index: 1;
+  }
+
+  .hero-image {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    filter: brightness(0.5) contrast(1.2);
+  }
+
+  .hero-image-placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, var(--iron) 0%, #0f0f0f 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Architectural grid pattern */
+  .hero-image-placeholder::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(200,68,12,0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,68,12,0.08) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .blueprint-icon {
+    font-size: 120px;
+    opacity: 0.15;
+    filter: grayscale(1);
+  }
+
+  .hero-stats {
+    position: absolute;
+    bottom: 80px;
+    right: 48px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    opacity: 0;
+    animation: fadeUp 0.8s 1s forwards;
+  }
+
+  .stat {
+    text-align: right;
+    border-right: 2px solid var(--rust);
+    padding-right: 16px;
+  }
+
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    color: var(--white);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* TICKER */
+  .ticker {
+    background: var(--rust);
+    padding: 12px 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .ticker-inner {
+    display: inline-flex;
+    animation: ticker 25s linear infinite;
+  }
+
+  .ticker-item {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    margin-right: 64px;
+    color: rgba(255,255,255,0.9);
+  }
+
+  .ticker-sep { margin-right: 64px; opacity: 0.5; }
+
+  /* FEATURES */
+  .features {
+    padding: 120px 64px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .section-header {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 48px;
+    align-items: end;
+    margin-bottom: 80px;
+  }
+
+  .section-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 120px;
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(200,68,12,0.3);
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(42px, 5vw, 72px);
+    line-height: 0.95;
+    letter-spacing: 0.03em;
+    margin-bottom: 16px;
+  }
+
+  .section-desc {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.7;
+    max-width: 500px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+  }
+
+  .feature-card {
+    background: var(--iron);
+    padding: 48px 40px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 0;
+    background: var(--rust);
+    transition: height 0.4s ease;
+  }
+
+  .feature-card:hover { background: var(--concrete); }
+  .feature-card:hover::before { height: 100%; }
+
+  .feature-icon {
+    font-size: 36px;
+    margin-bottom: 24px;
+    display: block;
+  }
+
+  .feature-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+    color: var(--white);
+  }
+
+  .feature-desc {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  .feature-tag {
+    display: inline-block;
+    margin-top: 24px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--rust);
+    text-transform: uppercase;
+    background: rgba(200,68,12,0.1);
+    padding: 4px 12px;
+  }
+
+  /* AI PORTAL SECTION */
+  .ai-section {
+    background: var(--cream);
+    color: var(--steel);
+    padding: 120px 64px;
+  }
+
+  .ai-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: start;
+  }
+
+  .ai-section .section-title { color: var(--steel); }
+  .ai-section .section-num { -webkit-text-stroke-color: rgba(26,26,26,0.15); }
+
+  .ai-chat {
+    background: var(--steel);
+    border-radius: 0;
+    overflow: hidden;
+    box-shadow: 24px 24px 0 rgba(200,68,12,0.15);
+  }
+
+  .chat-header {
+    background: var(--iron);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .chat-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .chat-dots span {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--concrete);
+  }
+
+  .chat-dots span:first-child { background: #e74c3c; }
+  .chat-dots span:nth-child(2) { background: var(--amber); }
+  .chat-dots span:last-child { background: #2ecc71; }
+
+  .chat-title-bar {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .ai-badge {
+    margin-left: auto;
+    background: rgba(200,68,12,0.2);
+    color: var(--rust);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    padding: 3px 10px;
+    border: 1px solid rgba(200,68,12,0.3);
+  }
+
+  .chat-messages {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 320px;
+  }
+
+  .msg {
+    max-width: 80%;
+    padding: 12px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .msg-ai {
+    background: var(--iron);
+    color: var(--cream);
+    align-self: flex-start;
+    border-left: 2px solid var(--rust);
+  }
+
+  .msg-user {
+    background: var(--rust);
+    color: var(--white);
+    align-self: flex-end;
+  }
+
+  .msg-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 4px;
+  }
+
+  .typing {
+    display: flex;
+    gap: 4px;
+    padding: 4px 0;
+  }
+
+  .typing span {
+    width: 6px; height: 6px;
+    background: var(--muted);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  .chat-input-area {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .chat-input {
+    flex: 1;
+    background: var(--iron);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--cream);
+    padding: 10px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+    cursor: none;
+  }
+
+  .chat-input::placeholder { color: var(--muted); }
+
+  .chat-send {
+    background: var(--rust);
+    border: none;
+    color: var(--white);
+    padding: 10px 18px;
+    font-size: 16px;
+    cursor: none;
+    transition: background 0.2s;
+  }
+
+  .chat-send:hover { background: #a8360a; }
+
+  /* INTAKE FORM */
+  .intake-section {
+    padding: 120px 64px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .form-container {
+    background: var(--iron);
+    padding: 2px;
+    margin-top: 64px;
+  }
+
+  .form-inner {
+    background: var(--steel);
+    padding: 64px;
+  }
+
+  .form-steps {
+    display: flex;
+    gap: 0;
+    margin-bottom: 64px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .step {
+    padding: 16px 32px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.2s;
+  }
+
+  .step.active {
+    color: var(--cream);
+    border-bottom-color: var(--rust);
+  }
+
+  .step-num {
+    display: inline-block;
+    width: 20px; height: 20px;
+    background: rgba(200,68,12,0.15);
+    color: var(--rust);
+    text-align: center;
+    line-height: 20px;
+    font-size: 10px;
+    margin-right: 8px;
+  }
+
+  .step.active .step-num { background: var(--rust); color: var(--white); }
+
+  /* Form panels */
+  .form-panel { display: none; }
+  .form-panel.active { display: block; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  select,
+  textarea {
+    background: var(--iron);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--cream);
+    padding: 14px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+    cursor: none;
+    -webkit-appearance: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--rust);
+  }
+
+  select option { background: var(--iron); }
+
+  textarea { resize: vertical; min-height: 120px; }
+
+  .range-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    background: var(--iron);
+    height: 4px;
+    border: none;
+    padding: 0;
+    cursor: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    background: var(--rust);
+    border-radius: 50%;
+    cursor: none;
+  }
+
+  .range-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--rust);
+    letter-spacing: 0.05em;
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed rgba(200,68,12,0.3);
+    padding: 48px;
+    text-align: center;
+    cursor: none;
+    transition: all 0.2s;
+    position: relative;
+    background: rgba(200,68,12,0.03);
+  }
+
+  .upload-zone:hover {
+    border-color: var(--rust);
+    background: rgba(200,68,12,0.07);
+  }
+
+  .upload-zone input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: none;
+    width: 100%;
+    height: 100%;
+    border: none;
+    padding: 0;
+  }
+
+  .upload-icon { font-size: 36px; display: block; margin-bottom: 12px; }
+  .upload-text { font-size: 14px; color: var(--muted); }
+  .upload-text strong { color: var(--rust); }
+
+  .upload-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+    min-height: 0;
+  }
+
+  .preview-thumb {
+    width: 80px; height: 80px;
+    object-fit: cover;
+    border: 1px solid rgba(200,68,12,0.3);
+  }
+
+  /* Checkboxes */
+  .check-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: none;
+  }
+
+  .check-item input[type="checkbox"] {
+    width: 18px; height: 18px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: var(--iron);
+    accent-color: var(--rust);
+    cursor: none;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .check-item label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--cream);
+    cursor: none;
+  }
+
+  .form-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .btn-back {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--muted);
+    padding: 14px 32px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: none;
+    transition: all 0.2s;
+  }
+
+  .btn-back:hover { border-color: var(--cream); color: var(--cream); }
+
+  /* PROCESS */
+  .process-section {
+    background: var(--iron);
+    padding: 120px 64px;
+  }
+
+  .process-inner { max-width: 1400px; margin: 0 auto; }
+
+  .process-timeline {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    margin-top: 80px;
+    position: relative;
+  }
+
+  .process-timeline::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--rust), transparent);
+  }
+
+  .process-step {
+    padding: 0 24px;
+    text-align: center;
+  }
+
+  .step-circle {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--steel);
+    border: 2px solid var(--rust);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--rust);
+    position: relative;
+    z-index: 1;
+  }
+
+  .process-step-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    color: var(--white);
+  }
+
+  .process-step-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* PORTFOLIO */
+  .portfolio-section {
+    padding: 120px 64px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .portfolio-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: 300px 300px;
+    gap: 2px;
+    margin-top: 64px;
+  }
+
+  .portfolio-item {
+    background: var(--iron);
+    position: relative;
+    overflow: hidden;
+    cursor: none;
+  }
+
+  .portfolio-item:first-child { grid-row: 1 / 3; }
+
+  .portfolio-placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, var(--iron), var(--concrete));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    opacity: 0.2;
+    position: relative;
+  }
+
+  .portfolio-placeholder::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(200,68,12,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,68,12,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .portfolio-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(26,26,26,0.95), transparent);
+    padding: 32px;
+    transform: translateY(60%);
+    transition: transform 0.4s ease;
+  }
+
+  .portfolio-item:hover .portfolio-overlay { transform: translateY(0); }
+
+  .portfolio-cat {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--rust);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .portfolio-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 0.05em;
+    color: var(--white);
+    margin-bottom: 8px;
+  }
+
+  .portfolio-detail {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* TESTIMONIALS */
+  .testimonial-section {
+    background: var(--rust);
+    padding: 80px 64px;
+    overflow: hidden;
+  }
+
+  .testimonial-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .testimonial-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 56px;
+    line-height: 0.9;
+    letter-spacing: 0.03em;
+    color: rgba(255,255,255,0.15);
+  }
+
+  .testimonial-quote {
+    font-size: 22px;
+    line-height: 1.6;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--white);
+    margin-bottom: 24px;
+  }
+
+  .testimonial-author {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    color: rgba(255,255,255,0.7);
+    text-transform: uppercase;
+  }
+
+  /* SUCCESS MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--iron);
+    padding: 64px;
+    max-width: 560px;
+    width: 90%;
+    text-align: center;
+    position: relative;
+    animation: fadeUp 0.4s forwards;
+  }
+
+  .modal-icon { font-size: 56px; margin-bottom: 24px; }
+
+  .modal h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+    color: var(--white);
+  }
+
+  .modal p { color: var(--muted); line-height: 1.7; margin-bottom: 32px; }
+
+  .modal-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+    margin-bottom: 32px;
+    background: rgba(0,0,0,0.2);
+    padding: 24px;
+  }
+
+  .modal-step-item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 13px;
+    color: var(--cream);
+  }
+
+  .modal-step-num {
+    width: 24px; height: 24px;
+    background: var(--rust);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* FOOTER */
+  footer {
+    background: #0f0f0f;
+    padding: 80px 64px 40px;
+  }
+
+  .footer-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .footer-top {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 64px;
+    padding-bottom: 64px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .footer-brand .logo { display: block; margin-bottom: 20px; font-size: 32px; }
+  .footer-tagline { color: var(--muted); font-size: 14px; line-height: 1.7; max-width: 280px; }
+
+  .footer-col h4 {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--rust);
+    margin-bottom: 20px;
+  }
+
+  .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .footer-col a { color: var(--muted); text-decoration: none; font-size: 14px; transition: color 0.2s; }
+  .footer-col a:hover { color: var(--cream); }
+
+  .footer-bottom {
+    padding-top: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-copy { font-size: 12px; color: var(--muted); }
+
+  /* SCROLL PROGRESS */
+  .scroll-progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: var(--rust);
+    z-index: 200;
+    transition: width 0.1s;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-6px); }
+  }
+
+  /* AI Generating animation */
+  .ai-generating {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(200,68,12,0.08);
+    border: 1px solid rgba(200,68,12,0.2);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--rust);
+    letter-spacing: 0.1em;
+    margin-top: 16px;
+  }
+
+  .ai-generating.show { display: flex; }
+
+  .ai-spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(200,68,12,0.2);
+    border-top-color: var(--rust);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .rendering-preview {
+    margin-top: 16px;
+    display: none;
+    background: var(--iron);
+    padding: 24px;
+    text-align: center;
+    border-left: 3px solid var(--rust);
+  }
+
+  .rendering-preview.show { display: block; }
+
+  .rendering-box {
+    background: linear-gradient(135deg, #1a2535, #0d1520);
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    font-size: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .rendering-box::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(100,180,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(100,180,255,0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+
+  .rendering-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    nav { padding: 20px 24px; }
+    nav ul { display: none; }
+    .hero { grid-template-columns: 1fr; }
+    .hero-right { display: none; }
+    .hero-left { padding: 100px 24px 64px; }
+    .hero-stats { bottom: 24px; right: 24px; }
+    .features { padding: 80px 24px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .ai-section { padding: 80px 24px; }
+    .ai-inner { grid-template-columns: 1fr; }
+    .intake-section { padding: 80px 24px; }
+    .form-inner { padding: 32px 24px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .check-grid { grid-template-columns: 1fr 1fr; }
+    .process-section { padding: 80px 24px; }
+    .process-timeline { grid-template-columns: 1fr; }
+    .process-timeline::before { display: none; }
+    .portfolio-section { padding: 80px 24px; }
+    .portfolio-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
+    .portfolio-item:first-child { grid-row: auto; }
+    .testimonial-section { padding: 64px 24px; }
+    .testimonial-inner { grid-template-columns: 1fr; }
+    footer { padding: 64px 24px 32px; }
+    .footer-top { grid-template-columns: 1fr 1fr; }
+    .section-header { grid-template-columns: 1fr; }
+    .section-num { font-size: 60px; }
+    .form-steps { overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Scroll Progress -->
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- Custom Cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- Success Modal -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal">
+    <div class="modal-icon">🏗️</div>
+    <h2>PROJECT INITIATED</h2>
+    <p>Your project has been received. Our AI is analyzing your requirements and will prepare an initial rendering and cost estimate within 24 hours.</p>
+    <div class="modal-steps">
+      <div class="modal-step-item"><div class="modal-step-num">1</div> AI renders preliminary design (24hrs)</div>
+      <div class="modal-step-item"><div class="modal-step-num">2</div> Cost estimate generated automatically</div>
+      <div class="modal-step-item"><div class="modal-step-num">3</div> Project manager assigned & contacts you</div>
+      <div class="modal-step-item"><div class="modal-step-num">4</div> Full proposal delivered within 5 days</div>
+    </div>
+    <button class="btn-primary" onclick="document.getElementById('successModal').classList.remove('show')">CLOSE & RETURN</button>
+  </div>
+</div>
+
+<!-- NAVIGATION -->
+<nav>
+  <div class="logo">FORGE<span>BUILD</span></div>
+  <ul>
+    <li><a href="#features">Services</a></li>
+    <li><a href="#ai-portal">AI Portal</a></li>
+    <li><a href="#intake">Start Project</a></li>
+    <li><a href="#portfolio">Portfolio</a></li>
+    <li><a href="#intake" class="nav-cta">Get Estimate</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <p class="hero-label">// AI-Powered Construction</p>
+    <h1>BUILD<br><em>SMARTER</em><br>FASTER</h1>
+    <p class="hero-sub">From concept to completion — FORGE BUILD combines expert construction with artificial intelligence to deliver precise estimates, stunning renderings, and seamless project management.</p>
+    <div class="hero-actions">
+      <a href="#intake" class="btn-primary">Start Your Project</a>
+      <a href="#process" class="btn-ghost">How It Works</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-image-placeholder">
+      <div class="blueprint-icon">🏛️</div>
+    </div>
+  </div>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-num">847+</div>
+      <div class="stat-label">Projects Complete</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">98%</div>
+      <div class="stat-label">Client Satisfaction</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">24hr</div>
+      <div class="stat-label">AI Rendering Turnaround</div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span class="ticker-item">RESIDENTIAL BUILDS</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">COMMERCIAL CONSTRUCTION</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">AI-POWERED RENDERINGS</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">INSTANT COST ESTIMATES</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">RENOVATIONS & ADDITIONS</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">PROJECT MANAGEMENT</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">SUSTAINABLE BUILDING</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">RESIDENTIAL BUILDS</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">COMMERCIAL CONSTRUCTION</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">AI-POWERED RENDERINGS</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">INSTANT COST ESTIMATES</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">RENOVATIONS & ADDITIONS</span>
+    <span class="ticker-sep">◆</span>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-header">
+    <div class="section-num">01</div>
+    <div>
+      <h2 class="section-title">WHAT WE<br>BUILD FOR YOU</h2>
+      <p class="section-desc">Every project is powered by cutting-edge AI tools that eliminate guesswork and deliver clarity from day one.</p>
+    </div>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🏗️</span>
+      <div class="feature-title">Custom Residential Builds</div>
+      <div class="feature-desc">Full-service home construction from foundation to finishes. We manage every phase with precision, keeping you informed at every milestone through our client portal.</div>
+      <span class="feature-tag">Residential</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🏢</span>
+      <div class="feature-title">Commercial Construction</div>
+      <div class="feature-desc">Offices, retail, and mixed-use developments built to code and on budget. Our AI estimating tools give you real-time cost visibility throughout the project lifecycle.</div>
+      <span class="feature-tag">Commercial</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🤖</span>
+      <div class="feature-title">AI Design Renderings</div>
+      <div class="feature-desc">Describe your vision, upload your site photos, and receive photorealistic 3D renderings within 24 hours — before a single nail is driven. Iterate until perfect.</div>
+      <span class="feature-tag">AI-Powered</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">💰</span>
+      <div class="feature-title">Instant Cost Estimation</div>
+      <div class="feature-desc">Our AI analyzes your project specifications, local material costs, and labor rates to generate detailed, itemized estimates — typically within hours, not weeks.</div>
+      <span class="feature-tag">AI-Powered</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔧</span>
+      <div class="feature-title">Renovations & Additions</div>
+      <div class="feature-desc">Transform existing spaces with strategic renovations. Upload your current floor plan and site photos, and our AI will render the possibilities before work begins.</div>
+      <span class="feature-tag">Renovation</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📊</span>
+      <div class="feature-title">Project Management Portal</div>
+      <div class="feature-desc">Real-time dashboards, milestone tracking, document sharing, and direct communication with your build team. Complete transparency from groundbreak to handover.</div>
+      <span class="feature-tag">Management</span>
+    </div>
+  </div>
+</section>
+
+<!-- AI PORTAL DEMO -->
+<section class="ai-section" id="ai-portal">
+  <div class="ai-inner">
+    <div>
+      <div class="section-header" style="grid-template-columns:1fr; margin-bottom:40px;">
+        <p style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.2em;color:var(--rust);text-transform:uppercase;margin-bottom:16px;">// AI Communication Portal</p>
+        <h2 class="section-title" style="color:var(--steel)">YOUR AI<br>BUILD ADVISOR</h2>
+        <p class="section-desc" style="color:#666;max-width:460px;margin-top:16px;">Ask anything about your project, get cost breakdowns, request design changes, and communicate with your team — all through one intelligent interface.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;gap:12px;align-items:start;">
+          <div style="width:8px;height:8px;background:var(--rust);border-radius:50%;flex-shrink:0;margin-top:6px;"></div>
+          <p style="font-size:14px;color:#444;line-height:1.6;">Upload site photos and get instant preliminary renderings based on your specifications.</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:start;">
+          <div style="width:8px;height:8px;background:var(--rust);border-radius:50%;flex-shrink:0;margin-top:6px;"></div>
+          <p style="font-size:14px;color:#444;line-height:1.6;">Ask questions in plain English — no construction jargon required. AI explains every decision.</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:start;">
+          <div style="width:8px;height:8px;background:var(--rust);border-radius:50%;flex-shrink:0;margin-top:6px;"></div>
+          <p style="font-size:14px;color:#444;line-height:1.6;">Get real-time cost impact analysis when you request design changes or upgrades.</p>
+        </div>
+      </div>
+      
+      <div class="ai-generating" id="aiGenerating">
+        <div class="ai-spinner"></div>
+        GENERATING RENDERING...
+      </div>
+      <div class="rendering-preview" id="renderPreview">
+        <div class="rendering-box">🏠</div>
+        <div class="rendering-label">AI RENDERING — PRELIMINARY CONCEPT · MODERN FARMHOUSE · 2,400 SQFT</div>
+      </div>
+    </div>
+
+    <div class="ai-chat">
+      <div class="chat-header">
+        <div class="chat-dots"><span></span><span></span><span></span></div>
+        <div class="chat-title-bar">FORGE AI — Project Assistant</div>
+        <div class="ai-badge">● LIVE</div>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="msg msg-ai">
+          <div class="msg-label">FORGE AI</div>
+          Hi! I'm your FORGE BUILD AI assistant. I can help with project planning, cost estimates, renderings, and answering any construction questions. What are you building?
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <input type="text" class="chat-input" id="chatInput" placeholder="Ask about costs, materials, timelines..." onkeypress="handleChatKey(event)">
+        <button class="chat-send" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INTAKE FORM -->
+<section class="intake-section" id="intake">
+  <div class="section-header">
+    <div class="section-num">02</div>
+    <div>
+      <h2 class="section-title">START YOUR<br>PROJECT TODAY</h2>
+      <p class="section-desc">Fill out our intelligent intake form. Our AI will analyze your requirements and generate a preliminary rendering and cost estimate within 24 hours.</p>
+    </div>
+  </div>
+
+  <div class="form-container">
+    <div class="form-inner">
+      <div class="form-steps">
+        <div class="step active" onclick="goToStep(1)" id="step-tab-1"><span class="step-num">1</span>Contact</div>
+        <div class="step" onclick="goToStep(2)" id="step-tab-2"><span class="step-num">2</span>Project</div>
+        <div class="step" onclick="goToStep(3)" id="step-tab-3"><span class="step-num">3</span>Specs</div>
+        <div class="step" onclick="goToStep(4)" id="step-tab-4"><span class="step-num">4</span>Site & Photos</div>
+        <div class="step" onclick="goToStep(5)" id="step-tab-5"><span class="step-num">5</span>Review</div>
+      </div>
+
+      <!-- STEP 1: Contact -->
+      <div class="form-panel active" id="panel-1">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>First Name *</label>
+            <input type="text" id="firstName" placeholder="John">
+          </div>
+          <div class="form-group">
+            <label>Last Name *</label>
+            <input type="text" id="lastName" placeholder="Smith">
+          </div>
+          <div class="form-group">
+            <label>Email Address *</label>
+            <input type="email" id="email" placeholder="john@example.com">
+          </div>
+          <div class="form-group">
+            <label>Phone Number *</label>
+            <input type="tel" id="phone" placeholder="(555) 123-4567">
+          </div>
+          <div class="form-group full">
+            <label>Mailing Address</label>
+            <input type="text" id="address" placeholder="123 Main Street, City, State, ZIP">
+          </div>
+          <div class="form-group">
+            <label>Preferred Contact Method</label>
+            <select id="contactMethod">
+              <option>Email</option>
+              <option>Phone Call</option>
+              <option>Text Message</option>
+              <option>Video Call</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Best Time to Contact</label>
+            <select id="contactTime">
+              <option>Morning (8am–12pm)</option>
+              <option>Afternoon (12pm–5pm)</option>
+              <option>Evening (5pm–8pm)</option>
+              <option>Anytime</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-nav">
+          <div></div>
+          <button class="btn-primary" onclick="goToStep(2)">NEXT: PROJECT DETAILS →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Project -->
+      <div class="form-panel" id="panel-2">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Project Name / Description *</label>
+            <input type="text" id="projectName" placeholder="e.g., Modern Farmhouse Build — Austin, TX">
+          </div>
+          <div class="form-group">
+            <label>Project Type *</label>
+            <select id="projectType">
+              <option value="">— Select Type —</option>
+              <option>New Residential Construction</option>
+              <option>New Commercial Construction</option>
+              <option>Home Renovation / Remodel</option>
+              <option>Home Addition</option>
+              <option>Accessory Dwelling Unit (ADU)</option>
+              <option>Garage / Workshop Build</option>
+              <option>Multi-Family Development</option>
+              <option>Mixed-Use Development</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Architectural Style</label>
+            <select id="archStyle">
+              <option value="">— Select Style —</option>
+              <option>Modern / Contemporary</option>
+              <option>Modern Farmhouse</option>
+              <option>Traditional / Colonial</option>
+              <option>Craftsman / Bungalow</option>
+              <option>Mid-Century Modern</option>
+              <option>Mediterranean / Spanish</option>
+              <option>Industrial</option>
+              <option>Transitional</option>
+              <option>Other / Not Sure</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Target Start Date</label>
+            <select id="startDate">
+              <option>Within 1 Month</option>
+              <option>1–3 Months</option>
+              <option>3–6 Months</option>
+              <option>6–12 Months</option>
+              <option>12+ Months (Planning Stage)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Project Timeline</label>
+            <select id="timeline">
+              <option>Flexible</option>
+              <option>Under 6 Months</option>
+              <option>6–12 Months</option>
+              <option>12–18 Months</option>
+              <option>18–24 Months</option>
+              <option>24+ Months</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Budget Range</label>
+            <div class="range-group">
+              <div class="range-display" id="budgetDisplay">$250,000</div>
+              <input type="range" id="budgetRange" min="50000" max="5000000" step="10000" value="250000" oninput="updateBudget(this.value)">
+              <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px;">
+                <span>$50K</span><span>$5M+</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label>Project Vision & Goals</label>
+            <textarea id="projectVision" placeholder="Describe your dream project. Include any specific features, priorities, or inspiration you have. The more detail you provide, the better our AI can tailor your rendering and estimate..."></textarea>
+          </div>
+        </div>
+        <div class="form-nav">
+          <button class="btn-back" onclick="goToStep(1)">← BACK</button>
+          <button class="btn-primary" onclick="goToStep(3)">NEXT: SPECIFICATIONS →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Specs -->
+      <div class="form-panel" id="panel-3">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Square Footage (approx.)</label>
+            <input type="number" id="sqft" placeholder="e.g., 2400">
+          </div>
+          <div class="form-group">
+            <label>Number of Stories</label>
+            <select id="stories">
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+              <option>Split-Level</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Bedrooms</label>
+            <select id="bedrooms">
+              <option>Studio</option>
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+              <option>4</option>
+              <option>5</option>
+              <option>6+</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Bathrooms</label>
+            <select id="bathrooms">
+              <option>1</option>
+              <option>1.5</option>
+              <option>2</option>
+              <option>2.5</option>
+              <option>3</option>
+              <option>3.5</option>
+              <option>4+</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Primary Exterior Material</label>
+            <select id="exteriorMaterial">
+              <option>Not Decided</option>
+              <option>Board & Batten Siding</option>
+              <option>Brick</option>
+              <option>Stone / Masonry</option>
+              <option>Stucco</option>
+              <option>Metal / Steel</option>
+              <option>Fiber Cement</option>
+              <option>Wood Siding</option>
+              <option>Mixed Materials</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Roof Style</label>
+            <select id="roofStyle">
+              <option>Not Decided</option>
+              <option>Gable</option>
+              <option>Hip</option>
+              <option>Flat / Low-Slope</option>
+              <option>Metal Standing Seam</option>
+              <option>Butterfly</option>
+              <option>Shed</option>
+            </select>
+          </div>
+        </div>
+
+        <p style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.15em;color:var(--rust);text-transform:uppercase;margin-bottom:16px;">Interior & Special Features</p>
+        <div class="check-grid" style="margin-bottom:32px;">
+          <label class="check-item"><input type="checkbox" name="feature" value="open-plan"> <label>Open Floor Plan</label></label>
+          <label class="check-item"><input type="checkbox" name="feature" value="home-office"> <label>Home Office(s)</label></label>
+          <label class="check-item"><input type="checkbox" name="feature" value="chef-kitchen"> <label>Chef's Kitchen</label></label>
+          <label class="check-item"><input type="checkbox" name="feature" value="butler-pantry"> <label>Butler's Pantry</label></label>
+          <label class="check-item"><input type="checkbox" name="feature" value="mudroom"> <label>Mudroom / Laundry</label></label>
+          <label class="check-item"><input type="checkbox" name="feature" value="media-room"> <label>Media / Theater Room</label></label>
+          <label class="check-item"><input type="checkbox" name="feature" value="gym"> <label>Home Gym</label></label>
+          <label class="check-item"><input type="checkbox" name="feature" value="pool"> <label>Pool / Spa</label></label>
+          <label class="check-item"><input type="checkbox" name="feature" value="garage"> <label>Garage (2+ car)</label></label>
+          <label class="check-item"><input type="checkbox" name="feature" value="solar"> <label>Solar / Net Zero</label></label>
+          <label class="check-item"><input type="checkbox" name="feature" value="smart-home"> <label>Smart Home Tech</label></label>
+          <label class="check-item"><input type="checkbox" name="feature" value="outdoor-living"> <label>Outdoor Living Space</label></label>
+        </div>
+
+        <div class="form-group">
+          <label>Finish Level</label>
+          <select id="finishLevel">
+            <option>Standard (builder-grade finishes)</option>
+            <option>Mid-Range (upgraded appliances, custom cabinetry)</option>
+            <option>Premium (high-end materials throughout)</option>
+            <option>Ultra-Luxury (custom everything, no budget ceiling)</option>
+          </select>
+        </div>
+
+        <div class="form-nav">
+          <button class="btn-back" onclick="goToStep(2)">← BACK</button>
+          <button class="btn-primary" onclick="goToStep(4)">NEXT: SITE & PHOTOS →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Site & Photos -->
+      <div class="form-panel" id="panel-4">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Property / Build Site Address</label>
+            <input type="text" id="siteAddress" placeholder="123 Build Site Road, City, State, ZIP">
+          </div>
+          <div class="form-group">
+            <label>Lot Size</label>
+            <input type="text" id="lotSize" placeholder="e.g., 0.5 acres or 10,000 sqft">
+          </div>
+          <div class="form-group">
+            <label>Lot Topology</label>
+            <select id="topology">
+              <option>Flat / Level</option>
+              <option>Gentle Slope</option>
+              <option>Steep Slope</option>
+              <option>Hillside</option>
+              <option>Corner Lot</option>
+              <option>Waterfront</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Existing Structures</label>
+            <select id="existingStructures">
+              <option>Raw / Vacant Land</option>
+              <option>Home to be Demolished</option>
+              <option>Existing Home (Addition/Reno)</option>
+              <option>Commercial Building</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Utilities Status</label>
+            <select id="utilities">
+              <option>All Connected</option>
+              <option>Partial (some connected)</option>
+              <option>None / Raw Land</option>
+              <option>Unknown</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Site Conditions / Notes</label>
+            <textarea id="siteNotes" placeholder="Describe any site challenges: drainage issues, setback requirements, HOA restrictions, view corridors you want to preserve, neighboring structures, etc."></textarea>
+          </div>
+        </div>
+
+        <p style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.15em;color:var(--rust);text-transform:uppercase;margin-bottom:16px;">Upload Site Photos</p>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Photos dramatically improve the quality and accuracy of AI renderings. Upload site/lot photos, existing structure photos, and any inspiration images.</p>
+        
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" multiple accept="image/*" onchange="handleFiles(this.files)">
+          <span class="upload-icon">📷</span>
+          <p class="upload-text">Drop photos here or <strong>click to browse</strong></p>
+          <p style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'DM Mono',monospace;">SITE PHOTOS · INSPIRATION · EXISTING STRUCTURES · JPG / PNG / HEIC</p>
+          <div class="upload-preview" id="uploadPreview"></div>
+        </div>
+
+        <div style="margin-top:24px;" class="form-group full">
+          <label>Inspiration / Reference Links</label>
+          <input type="text" id="inspiration" placeholder="Paste Pinterest, Houzz, or website links to your favorite projects...">
+        </div>
+
+        <div class="form-nav">
+          <button class="btn-back" onclick="goToStep(3)">← BACK</button>
+          <button class="btn-primary" onclick="goToStep(5)">NEXT: REVIEW & SUBMIT →</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: Review -->
+      <div class="form-panel" id="panel-5">
+        <div style="background:var(--iron);padding:32px;margin-bottom:32px;">
+          <p style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--rust);text-transform:uppercase;margin-bottom:24px;">PROJECT SUMMARY</p>
+          <div id="reviewContent" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:14px;color:var(--cream);">
+          </div>
+        </div>
+
+        <div style="background:rgba(200,68,12,0.08);border:1px solid rgba(200,68,12,0.2);padding:24px;margin-bottom:32px;">
+          <p style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.15em;color:var(--rust);text-transform:uppercase;margin-bottom:12px;">🤖 What Happens Next</p>
+          <p style="font-size:13px;color:var(--muted);line-height:1.8;">Upon submission, our AI will immediately begin analyzing your project requirements. You'll receive a confirmation email with a project ID. Within 24 hours, you'll receive a preliminary AI rendering. Within 48 hours, an itemized cost estimate. A dedicated project manager will reach out within one business day to discuss your project in detail.</p>
+        </div>
+
+        <div class="form-group" style="margin-bottom:24px;">
+          <label class="check-item">
+            <input type="checkbox" id="agreeTerms">
+            <label style="font-size:13px;letter-spacing:0;text-transform:none;color:var(--cream);">I agree to be contacted by FORGE BUILD regarding my project inquiry. I understand this is not a binding contract.</label>
+          </label>
+        </div>
+
+        <div class="form-nav">
+          <button class="btn-back" onclick="goToStep(4)">← BACK</button>
+          <button class="btn-primary" onclick="submitForm()" id="submitBtn">🚀 SUBMIT PROJECT REQUEST</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="process-section" id="process">
+  <div class="process-inner">
+    <div class="section-header">
+      <div class="section-num">03</div>
+      <div>
+        <h2 class="section-title">HOW WE<br>BUILD WITH YOU</h2>
+        <p class="section-desc">A clear, AI-enhanced process from first contact to final handover.</p>
+      </div>
+    </div>
+    <div class="process-timeline">
+      <div class="process-step">
+        <div class="step-circle">1</div>
+        <div class="process-step-title">Intake & Analysis</div>
+        <div class="process-step-desc">Submit your project details and site photos. Our AI immediately begins requirement analysis.</div>
+      </div>
+      <div class="process-step">
+        <div class="step-circle">2</div>
+        <div class="process-step-title">AI Rendering</div>
+        <div class="process-step-desc">Receive photorealistic renderings within 24 hours. Request unlimited iterations until satisfied.</div>
+      </div>
+      <div class="process-step">
+        <div class="step-circle">3</div>
+        <div class="process-step-title">Cost Proposal</div>
+        <div class="process-step-desc">Detailed, itemized cost breakdown generated by AI, reviewed and signed off by our estimators.</div>
+      </div>
+      <div class="process-step">
+        <div class="step-circle">4</div>
+        <div class="process-step-title">Build Phase</div>
+        <div class="process-step-desc">Construction begins with real-time tracking via your client portal. Full transparency at every step.</div>
+      </div>
+      <div class="process-step">
+        <div class="step-circle">5</div>
+        <div class="process-step-title">Handover</div>
+        <div class="process-step-desc">Project delivery with complete documentation, warranty information, and ongoing support access.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PORTFOLIO -->
+<section class="portfolio-section" id="portfolio">
+  <div class="section-header">
+    <div class="section-num">04</div>
+    <div>
+      <h2 class="section-title">RECENT<br>BUILDS</h2>
+      <p class="section-desc">A selection of completed projects across residential, commercial, and mixed-use categories.</p>
+    </div>
+  </div>
+  <div class="portfolio-grid">
+    <div class="portfolio-item">
+      <div class="portfolio-placeholder">🏠</div>
+      <div class="portfolio-overlay">
+        <div class="portfolio-cat">Residential · 2024</div>
+        <div class="portfolio-name">The Ridgeline Residence</div>
+        <div class="portfolio-detail">4,200 sqft · Modern Farmhouse · Austin, TX · $1.2M</div>
+      </div>
+    </div>
+    <div class="portfolio-item">
+      <div class="portfolio-placeholder">🏢</div>
+      <div class="portfolio-overlay">
+        <div class="portfolio-cat">Commercial · 2024</div>
+        <div class="portfolio-name">Meridian Office Park</div>
+        <div class="portfolio-detail">18,000 sqft · Modern · Denver, CO · $4.8M</div>
+      </div>
+    </div>
+    <div class="portfolio-item">
+      <div class="portfolio-placeholder">🏗️</div>
+      <div class="portfolio-overlay">
+        <div class="portfolio-cat">Renovation · 2023</div>
+        <div class="portfolio-name">The Laurel Addition</div>
+        <div class="portfolio-detail">+1,800 sqft addition · Craftsman · Portland, OR · $480K</div>
+      </div>
+    </div>
+    <div class="portfolio-item">
+      <div class="portfolio-placeholder">🏘️</div>
+      <div class="portfolio-overlay">
+        <div class="portfolio-cat">Multi-Family · 2023</div>
+        <div class="portfolio-name">The Arbor Flats</div>
+        <div class="portfolio-detail">24 units · Contemporary · Nashville, TN · $6.2M</div>
+      </div>
+    </div>
+    <div class="portfolio-item">
+      <div class="portfolio-placeholder">🏡</div>
+      <div class="portfolio-overlay">
+        <div class="portfolio-cat">Residential · 2023</div>
+        <div class="portfolio-name">Desert Vault House</div>
+        <div class="portfolio-detail">3,100 sqft · Desert Modern · Scottsdale, AZ · $890K</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIAL -->
+<section class="testimonial-section">
+  <div class="testimonial-inner">
+    <div class="testimonial-label">"</div>
+    <div>
+      <p class="testimonial-quote">We had no idea what our project would look like until FORGE's AI showed us a rendering on day two. We fell in love before a single permit was filed. The AI cost estimate was within 4% of the final build cost. Extraordinary experience.</p>
+      <p class="testimonial-author">— Marcus & Julie Chen · Ridgeline Residence · Austin, TX</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="logo">FORGE<span>BUILD</span></div>
+        <p class="footer-tagline">AI-powered construction management. From concept to completion, we build smarter.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Services</h4>
+        <ul>
+          <li><a href="#">Residential Builds</a></li>
+          <li><a href="#">Commercial Construction</a></li>
+          <li><a href="#">Renovations</a></li>
+          <li><a href="#">AI Renderings</a></li>
+          <li><a href="#">Cost Estimation</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Our Team</a></li>
+          <li><a href="#">Portfolio</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Press</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="#">(512) 555-0182</a></li>
+          <li><a href="#">hello@forgebuild.co</a></li>
+          <li><a href="#">Client Portal Login</a></li>
+          <li><a href="#">Schedule a Call</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">© 2025 FORGE BUILD LLC · Licensed & Insured · All Rights Reserved</p>
+      <p class="footer-copy">Privacy Policy · Terms of Service · Contractor License #TX-88291</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const cursorRing = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = (e.clientX - 6) + 'px';
+    cursor.style.top = (e.clientY - 6) + 'px';
+    cursorRing.style.left = (e.clientX - 18) + 'px';
+    cursorRing.style.top = (e.clientY - 18) + 'px';
+  });
+
+  // Scroll progress
+  window.addEventListener('scroll', () => {
+    const p = document.getElementById('scrollProgress');
+    const pct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+    p.style.width = pct + '%';
+  });
+
+  // Budget range
+  function updateBudget(val) {
+    const n = parseInt(val);
+    let formatted;
+    if (n >= 1000000) {
+      formatted = '$' + (n / 1000000).toFixed(1).replace('.0', '') + 'M';
+    } else {
+      formatted = '$' + n.toLocaleString();
+    }
+    document.getElementById('budgetDisplay').textContent = formatted;
+  }
+
+  // Form steps
+  let currentStep = 1;
+  function goToStep(step) {
+    document.querySelector('.form-panel.active').classList.remove('active');
+    document.getElementById('panel-' + step).classList.add('active');
+    document.querySelector('.step.active')?.classList.remove('active');
+    document.getElementById('step-tab-' + step).classList.add('active');
+    currentStep = step;
+    if (step === 5) buildReview();
+  }
+
+  function buildReview() {
+    const data = {
+      'Name': (document.getElementById('firstName').value || 'Not provided') + ' ' + (document.getElementById('lastName').value || ''),
+      'Email': document.getElementById('email').value || 'Not provided',
+      'Phone': document.getElementById('phone').value || 'Not provided',
+      'Project Type': document.getElementById('projectType').value || 'Not selected',
+      'Style': document.getElementById('archStyle').value || 'Not selected',
+      'Budget': document.getElementById('budgetDisplay').textContent,
+      'Square Footage': (document.getElementById('sqft').value || 'TBD') + ' sqft',
+      'Start Date': document.getElementById('startDate').value,
+      'Finish Level': document.getElementById('finishLevel').value,
+      'Site Address': document.getElementById('siteAddress').value || 'Not provided',
+    };
+    const html = Object.entries(data).map(([k, v]) =>
+      `<div><div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">${k}</div><div style="font-size:14px;color:var(--cream);">${v || '—'}</div></div>`
+    ).join('');
+    document.getElementById('reviewContent').innerHTML = html;
+  }
+
+  // Submit
+  function submitForm() {
+    if (!document.getElementById('agreeTerms').checked) {
+      alert('Please agree to the terms before submitting.');
+      return;
+    }
+    document.getElementById('successModal').classList.add('show');
+  }
+
+  // File upload
+  function handleFiles(files) {
+    const preview = document.getElementById('uploadPreview');
+    [...files].forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.className = 'preview-thumb';
+        preview.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Drag & drop
+  const zone = document.getElementById('uploadZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--rust)'; });
+  zone.addEventListener('dragleave', () => zone.style.borderColor = 'rgba(200,68,12,0.3)');
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.style.borderColor = 'rgba(200,68,12,0.3)';
+    handleFiles(e.dataTransfer.files);
+  });
+
+  // AI Chat
+  const responses = {
+    default: [
+      "Great question! Based on typical projects of this type, I'd estimate the cost to be in the range of $200–$350 per square foot for standard finishes. I'll generate a more precise estimate once you've submitted your full project details.",
+      "I can help with that! Our team specializes in exactly this type of build. Once you submit your intake form with site photos, our AI will generate preliminary renderings within 24 hours.",
+      "That's a common concern. To give you a precise answer, I'll need to know more about your lot size, local zoning, and desired square footage. Can you fill out our project intake form so I can analyze the specifics?",
+      "Excellent choice! Modern farmhouse style is trending and holds value well. I can generate a preliminary rendering for you — just start the intake form and upload a few site photos.",
+      "Cost estimation is one of our strongest AI capabilities. After you submit your specifications, our system will pull current material prices, local labor rates, and generate a detailed line-item estimate typically within 48 hours."
+    ],
+    render: "I'll generate a preliminary rendering right now based on your description! Please upload site photos in the intake form for maximum accuracy. Check out a sample below 👇",
+    cost: "Based on typical projects in your area, here's a rough estimate: Foundation & framing: 25–30% of total. MEP (mechanical, electrical, plumbing): 20–25%. Finishes & fixtures: 25–35%. Soft costs (permits, design): 10–15%. Submit your full specs for a detailed itemized estimate.",
+    timeline: "Project timelines depend on size and complexity. A typical custom home (2,000–3,500 sqft) runs 10–14 months from permit to completion. Commercial projects vary widely. We'll give you a detailed schedule after reviewing your intake form.",
+  };
+
+  function handleChatKey(e) {
+    if (e.key === 'Enter') sendMessage();
+  }
+
+  function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const msgs = document.getElementById('chatMessages');
+    
+    // User message
+    const userDiv = document.createElement('div');
+    userDiv.className = 'msg msg-user';
+    userDiv.innerHTML = `<div class="msg-label">YOU</div>${msg}`;
+    msgs.appendChild(userDiv);
+
+    // Typing indicator
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'msg msg-ai';
+    typingDiv.innerHTML = `<div class="msg-label">FORGE AI</div><div class="typing"><span></span><span></span><span></span></div>`;
+    msgs.appendChild(typingDiv);
+    msgs.scrollTop = msgs.scrollHeight;
+    input.value = '';
+
+    setTimeout(() => {
+      let reply;
+      const lower = msg.toLowerCase();
+      if (lower.includes('render') || lower.includes('design') || lower.includes('look')) {
+        reply = responses.render;
+        setTimeout(() => {
+          document.getElementById('aiGenerating').classList.add('show');
+          setTimeout(() => {
+            document.getElementById('aiGenerating').classList.remove('show');
+            document.getElementById('renderPreview').classList.add('show');
+          }, 2500);
+        }, 500);
+      } else if (lower.includes('cost') || lower.includes('price') || lower.includes('budget') || lower.includes('estimate')) {
+        reply = responses.cost;
+      } else if (lower.includes('time') || lower.includes('long') || lower.includes('schedule')) {
+        reply = responses.timeline;
+      } else {
+        reply = responses.default[Math.floor(Math.random() * responses.default.length)];
+      }
+
+      typingDiv.innerHTML = `<div class="msg-label">FORGE AI</div>${reply}`;
+      msgs.scrollTop = msgs.scrollHeight;
+    }, 1400);
+  }
+
+  // Scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(el => {
+      if (el.isIntersecting) {
+        el.target.style.opacity = '1';
+        el.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.feature-card, .process-step, .portfolio-item').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(30px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>
